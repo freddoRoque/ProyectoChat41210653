@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat de avengers1</title>
+    <script type="module" src="cmp/mi-footer.js"></script>
+    <link rel="stylesheet" href="css/estilos.css">
+    <!-- Carga el núcleo de Firebase JS SDK -->
+    <script src="/__/firebase/7.15.0/firebase-app.js"></script>
+    <!-- Agrega el manejo de autenticación. -->
+    <script src="/__/firebase/7.15.0/firebase-auth.js"></script>
+    <!-- Agrega el manejo de bases de datos. -->
+    <script src="/__/firebase/7.15.0/firebase-firestore.js"></script>
+    <!-- Configura la app usando la información del sitio de Firebase. -->
+    <script src="/__/firebase/init.js"></script>
+  </head>
+  <body>
+    <header>
+      <button id=terminarSesión type="button" onclick="terminaSesión();">
+        Terminar Sesión
+      </button>
+      <h1>Chat</h1>
+    </header>
+    <figure><img id=avatar src="" alt=Avatar></figure>
+    <p><b><output id=nombre></output></b><br><output id=email></output></output></p>
+    <form action="javascript:agrega();">
+      <input id="texto" type="text" required placeholder="Mensaje">
+      <button>Enviar</button>
+    </form>
+    <ul id="mensajes">
+      <li><progress max="100">Cargando…</progress></li>
+    </ul>
+    <mi-footer></mi-footer>
+    <script>
+      /** Nombre de usuario atenticado por Firebase. */
+      let usuario = "";
+      /** Conexión al sistema de autenticación de Firebase. */
+      const auth = firebase.auth();
+      /** Función para desconectar la recepción del listado. */
+      let desconecta = null;
+      /** Tipo de autenticación de usuarios. En este caso es con Google. */
+      const provider = new firebase.auth.GoogleAuthProvider();
+      /* Configura el proveedor de Google para que permita seleccionar el
+       * nombre de usuario en una lista. */
+      provider.setCustomParameters({ prompt: "select_account" });
+      /* Recibe una función que se invoca cada que hay un cambio en la
+       * autenticación y recibe el modelo con las características del usuario.
+       */
+      auth.onAuthStateChanged(
+        /** Recibe las características del usuario o null si no ha iniciado
+         * sesión. */
+        usuarioAuth => {
+          if (usuarioAuth && usuarioAuth.email) {
+            // Usuario aceptado.
+            usuario = usuarioAuth.email;
+            email.value = usuarioAuth.email;
+            nombre.value = usuarioAuth.displayName || "";
+            avatar.src = usuarioAuth.photoURL || "";
+            // Muestra los mensajes del chat.
+            muestraMensajes();
+          } else {
+            // No ha iniciado sesión. Pide datos para iniciar sesión.
+            auth.signInWithRedirect(provider);
+            //auth.signInWithPopup(provider);
+            //auth.signInAnonymously();
+          }
+        },
+        // Función que se invoca si hay un error al verificar el usuario.
+        procesaError
+      );
+      /** Referencia para manipular la base de datos. */
+      const firestore = firebase.firestore();
+      /** Agrega un mensaje a la base de datos. */
+      function agrega() {
+        /* "MENSAJE" es el nombre de la colección a la que se agregan los
+         * datos. "USUARIO", "TEXTO" y "TIMESTAMP" son los nombres de las
+         * propiedades en el documento.
+         * El timestamp contiene la fecha y hora en que se agrega el registro.
+         */
+        firestore.collection("MENSAJE").add({
+          USUARIO: usuario,
+          TEXTO: texto.value.trim(),
+          TIMESTAMP: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      /** Muestra los mensaje almacenados en la collection "MENSAJE". Se
+       * actualiza automáticamente. */
+      function muestraMensajes() {
+        /* Consulta que se actualiza automáticamente. Pide todos los registros
+         * de la colección "MENSAJE" ordenador por el campo "TIMESTAMP" de
+         * forma descendente (Primero lo más nuevo). */
+        desconecta = firestore.collection("MENSAJE")
+          .orderBy("TIMESTAMP", "desc")
+          .onSnapshot(
+            /** Función que muestra los datos enviados por el servidor. Si los
+             * datos cambian en el servidor, se vuelve a invocar esta función y
+             * recibe los datos actualizados.
+             * @param {Object} documentos estructura parecida a un Array, que
+             * contiene una copia de los datos en el servidor. */
+             documentos => {
+              let inner = "";
+              if (documentos.size > 0) {
+                /* Cuando el número de documentos devueltos por la consulta es
+                 * mayor que 0, Revisa uno por uno los documentos y los
+                 * muestra. El iterador "doc" apunta a un documento de la base
+                 * de datos. */
+                 documentos.forEach(doc => {
+                  // recupera los datos almacenados en el documento.
+                  const data = doc.data();
+                  /* Agrega un li con los datos del registro, que se codifican
+                   * para evitar inyección de código. */
+                  inner += /* html */
+                    `<li>
+                      <b>${cod(data.USUARIO)}</b><br>${cod(data.TEXTO)}
+                    </li>`;
+                });
+                mensajes.innerHTML = inner;
+              } else {
+                /* Cuando el número de documentos devueltos por la consulta es
+                 * 0, agrega un texto HTML. */
+                mensajes.innerHTML = /* html */ `<li>No hay mensajes.</li>`;
+              }
+            },
+            /* Función que se invoca cuando hay un error. */
+            e => {
+              procesaError(e);
+              desconecta = null;
+              // Intenta conectarse otra vez.
+              muestraMensajes();
+            }
+          );
+      }
+      async function terminaSesión() {
+        try {
+          if (desconecta) {
+            desconecta();
+            desconecta = null;
+          }
+          await auth.signOut();
+        } catch (e) {
+          procesaError(e);
+        }
+      }
+      function procesaError(e) {
+        console.log(e);
+        alert(e.message);
+      }
+      function cod(valor) {
+        return (valor || "").toString()
+          .replace(/[<>"']/g,
+            /** @param {string} letra */
+            letra => {
+              switch (letra) {
+                case "<": return "&lt;";
+                case ">": return "&gt;";
+                case '"': return "&quot;";
+                case "'": return "&#039;";
+                default: return letra;
+              }
+            });
+      }
+    </script>
+  </body>
+</html>

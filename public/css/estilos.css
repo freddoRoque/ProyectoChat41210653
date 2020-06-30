@@ -1,0 +1,10 @@
+body {
+    font-family: sans-serif;
+}
+#terminarSesión {
+    float: right;
+}
+figure img {
+    width: 40px;
+    float: left;
+}
