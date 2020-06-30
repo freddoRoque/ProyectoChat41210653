@@ -79,7 +79,7 @@
          * El timestamp contiene la fecha y hora en que se agrega el registro.
          */
         firestore.collection("MENSAJE").add({
-          USUARIO: usuario,
+          USUARIO: nombre.value,
           TEXTO: texto.value.trim(),
           TIMESTAMP: firebase.firestore.FieldValue.serverTimestamp()
         });
