@@ -112,7 +112,7 @@
                    * para evitar inyección de código. */
                   inner += /* html */
                     `<li>
-                      <b>${cod(data.USUARIO)}</b><br>${cod(data.TEXTO)}
+                      <b>${cod(data.nombre.value)}</b><br>${cod(data.TEXTO)}
                     </li>`;
                 });
                 mensajes.innerHTML = inner;
