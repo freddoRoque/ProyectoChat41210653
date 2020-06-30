@@ -79,7 +79,7 @@
          * El timestamp contiene la fecha y hora en que se agrega el registro.
          */
         firestore.collection("MENSAJE").add({
-          USUARIO: nombre.value,
+          USUARIO: usuarioAuth.displayName,
           TEXTO: texto.value.trim(),
           TIMESTAMP: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -112,7 +112,7 @@
                    * para evitar inyección de código. */
                   inner += /* html */
                     `<li>
-                      <b>${cod(data.usuarioAuth.displayName )}</b><br>${cod(data.TEXTO)}
+                      <b>${cod(data.USUARIO )}</b><br>${cod(data.TEXTO)}
                     </li>`;
                 });
                 mensajes.innerHTML = inner;
